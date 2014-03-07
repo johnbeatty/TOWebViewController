@@ -147,7 +147,7 @@ MFMessageComposeViewControllerDelegate>
 - (void)doneButtonTapped:(id)sender;
 
 /* Event handlers for items in the 'action' popup */
-- (void)openSharingDialog;
+- (void)openSharingDialog:(id)sender;
 - (void)openInBrowser;
 - (void)openMailDialog;
 - (void)openMessageDialog;
@@ -355,52 +355,35 @@ MFMessageComposeViewControllerDelegate>
     NSString *resourcePath = [[NSBundle mainBundle] resourcePath];    
     NSString *fileName = nil;
     
-    //Only set up the navigation bar background graphic if the calling class has 
-    if ([[UINavigationBar appearance] backgroundImageForBarMetrics:UIBarMetricsDefault] == nil &&
-        [[UINavigationBar appearanceWhenContainedIn:[self class], nil] backgroundImageForBarMetrics:UIBarMetricsDefault] == nil)
-    {
-        fileName = [NSString stringWithFormat:@"TOWebViewControllerNavigationBarBG%@.png",themeSuffix];
-        UIImage *navigationBarImage = [[UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] resizableImageWithCapInsets:UIEdgeInsetsMake(0, 7, 0, 7)];
-        [self.navigationBar setBackgroundImage:navigationBarImage forBarMetrics:UIBarMetricsDefault];
-    }
-        
-    //The 'impressed' graphic that appears when a button is tapped
-    fileName = [NSString stringWithFormat:@"TOWebViewControllerIconPressedBG%@.png", themeSuffix];
-    UIImage *buttonPressedImage = [UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]];
-    
     //The back button
     fileName = [NSString stringWithFormat:@"TOWebViewControllerBackIcon%@.png", themeSuffix];
-    UIImage *backButtonImage = [UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]];
+    UIImage *backButtonImage = [[UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     [self.backButton setImage:backButtonImage forState:UIControlStateNormal];
-    [self.backButton setBackgroundImage:buttonPressedImage forState:UIControlStateHighlighted];
     
     //The forward button
     fileName = [NSString stringWithFormat:@"TOWebViewControllerForwardIcon%@.png", themeSuffix];
-    UIImage *forwardButtonImage = [UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]];
+    UIImage *forwardButtonImage = [[UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     [self.forwardButton setImage:forwardButtonImage forState:UIControlStateNormal];
-    [self.forwardButton setBackgroundImage:buttonPressedImage forState:UIControlStateHighlighted];
     
     //The reload icon
     fileName = [NSString stringWithFormat:@"TOWebViewControllerRefreshIcon%@.png", themeSuffix];
-    self.reloadIcon = [[UIImage alloc] initWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]];
+    self.reloadIcon = [[[UIImage alloc] initWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     
     //The stop icon
     fileName = [NSString stringWithFormat:@"TOWebViewControllerStopIcon%@.png", themeSuffix];
-    self.stopIcon   = [[UIImage alloc] initWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]];
+    self.stopIcon   = [[[UIImage alloc] initWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     
     //If we're showing the action button, load its icon
     if (self.showActionButton)
     {
         fileName = [NSString stringWithFormat:@"TOWebViewControllerActionIcon%@.png", themeSuffix];
-        [self.actionButton setImage:[UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] forState:UIControlStateNormal];
-        [self.actionButton setBackgroundImage:buttonPressedImage forState:UIControlStateHighlighted];
+        [self.actionButton setImage:[[UIImage imageWithContentsOfFile:[resourcePath stringByAppendingPathComponent:fileName]] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
     }
     
     //if we're NOT showing the action button on iPhone (or just iPad), show the reload button
     if (self.showActionButton == NO || UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
     {
         [self.reloadStopButton setImage:self.reloadIcon forState:UIControlStateNormal];
-        [self.reloadStopButton setBackgroundImage:buttonPressedImage forState:UIControlStateHighlighted];
     }
     
     //'Done' button - Only do if the app isn't applying a custom UIApperance
@@ -483,7 +466,7 @@ MFMessageComposeViewControllerDelegate>
     [self.backButton        addTarget:self action:@selector(backButtonTapped:)          forControlEvents:UIControlEventTouchUpInside];
     [self.forwardButton     addTarget:self action:@selector(forwardButtonTapped:)       forControlEvents:UIControlEventTouchUpInside];
     [self.reloadStopButton  addTarget:self action:@selector(reloadStopButtonTapped:)    forControlEvents:UIControlEventTouchUpInside];
-    [self.actionButton      addTarget:self action:@selector(actionButtonTapped:)        forControlEvents:UIControlEventTouchUpInside];
+    [self.actionButton      addTarget:self action:@selector(openSharingDialog:)        forControlEvents:UIControlEventTouchUpInside];
     
     //load all of the image assets and set the theme
     [self configureColorScheme];
@@ -753,7 +736,7 @@ MFMessageComposeViewControllerDelegate>
     //The share button
     TOWebViewControllerPopoverViewItem *sharingItem = [TOWebViewControllerPopoverViewItem new];
     sharingItem.title = NSLocalizedStringFromTable(@"Share...", @"TOWebViewControllerLocalizable", @"Sharing button");
-    sharingItem.action = ^(TOWebViewControllerPopoverViewItem *item){ [self openSharingDialog]; };
+    sharingItem.action = ^(TOWebViewControllerPopoverViewItem *item){ [self openSharingDialog:nil]; };
     
     // Open in button
     BOOL chromeIsInstalled = [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"googlechrome://"]];
@@ -792,7 +775,7 @@ MFMessageComposeViewControllerDelegate>
 
 #pragma mark -
 #pragma mark Action Item Event Handlers
-- (void)openSharingDialog
+- (void)openSharingDialog:(id)sender
 {
     //dismiss the present popover view
     [self.actionPopoverView dismissAnimated:NO];
@@ -801,7 +784,6 @@ MFMessageComposeViewControllerDelegate>
     if (NSClassFromString(@"UIActivityViewController"))
     {
         UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[self.url] applicationActivities:nil];
-        activityViewController.excludedActivityTypes = @[UIActivityTypeCopyToPasteboard]; //we've already provided 'Copy' functionality. This is a bit redundant.
         
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone)
         {
